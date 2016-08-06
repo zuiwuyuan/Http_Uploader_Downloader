@@ -1,103 +1,129 @@
 package com.lnyp.updown.util;
 
 
-import android.app.Activity;
-import android.text.TextUtils;
-import android.widget.Toast;
+import android.os.Environment;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.HttpStatus;
-import org.apache.commons.httpclient.methods.PostMethod;
-import org.apache.commons.httpclient.methods.multipart.MultipartRequestEntity;
-import org.apache.commons.httpclient.methods.multipart.Part;
-import org.apache.commons.httpclient.methods.multipart.StringPart;
-
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * 下载工具类
  */
 public class HttpDownloader {
 
+    private String SDPATH;
+
+    public HttpDownloader() {
+        //得到当前外部存储设备的目录( /SDCARD )
+        SDPATH = Environment.getExternalStorageDirectory() + "/";
+    }
+
+    private URL url = null;
+
     /**
-     * @param mContext  上下文
-     * @param targetUrl 文件上传地址
-     * @param filePath  文件路径
+     * 根据URL下载文件,前提是这个文件当中的内容是文本,函数的返回值就是文本当中的内容
+     * 1.创建一个URL对象
+     * 2.通过URL对象,创建一个HttpURLConnection对象
+     * 3.得到InputStream
+     * 4.从InputStream当中读取数据
+     *
+     * @param urlStr
+     * @return
      */
-    private void uploadFile(final Activity mContext, String targetUrl, final String filePath) {
-
-        System.out.println("targetUrl: " + targetUrl + "  filePath: " + filePath);
-
-        if (TextUtils.isEmpty(filePath)) {
-            Toast.makeText(mContext, "文件不存在", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        final PostMethod filePost = new PostMethod(targetUrl) {//这个用来中文乱码
-            public String getRequestCharSet() {
-                return "UTF-8";
+    public String download(String urlStr) {
+        StringBuffer sb = new StringBuffer();
+        String line = null;
+        BufferedReader buffer = null;
+        try {
+            url = new URL(urlStr);
+            //根据URL取得与资源提供的服务器的连接
+            HttpURLConnection urlConn = (HttpURLConnection) url.openConnection();
+            //将连接流管道成BufferedReader
+            buffer = new BufferedReader(new InputStreamReader(urlConn.getInputStream()));
+            //利用BufferedReader逐行读取文本信息,并添加到StringBuffer中
+            while ((line = buffer.readLine()) != null) {
+                sb.append(line);
             }
-        };
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (buffer != null) {
+                    buffer.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        //将读取的文本信息以String的形式输出
+        return sb.toString();
+    }
+
+    /**
+     * @param urlStr   文件地址
+     * @param path     文件保存路径
+     * @param fileName 文件名
+     * @return 文件的绝对路径
+     */
+    public String downFile(String urlStr, String path, String fileName) {
+
+        InputStream inputStream = null;
+        String filePath = null;
 
         try {
-
-            final HttpClient client = new HttpClient();
-
-            File file = new File(filePath);
-
-            if (file.exists() && file.isFile()) {
-
-                long fileSize = file.length();
-
-                if (fileSize >= 5 * 1024 * 1024) {
-                    Toast.makeText(mContext, "文件不得大于5M", Toast.LENGTH_SHORT).show();
-                    return;
-                }
-
+            FileUtils fileUtils = new FileUtils();
+            //判断文件是否存在
+            if (fileUtils.isFileExist(path + fileName)) {
+                System.out.println("exits");
+                filePath = SDPATH + path + fileName;
             } else {
-                Toast.makeText(mContext, "文件不存在", Toast.LENGTH_SHORT).show();
+                //得到io流
+                inputStream = getInputStreamFromURL(urlStr);
+                //从input流中将文件写入SD卡中
+                File resultFile = fileUtils.write2SDFromInput(path, fileName, inputStream);
+                if (resultFile != null) {
 
-                return;
-            }
-
-            // 上传文件和参数
-            Part[] parts = new Part[]{new CustomFilePart(file.getName(), file),
-                    new StringPart("filename", file.getName(), "UTF-8")};
-            filePost.setRequestEntity(new MultipartRequestEntity(parts, filePost.getParams()));
-
-            new Thread(new Runnable() {
-
-                @Override
-                public void run() {
-
-                    int statuscode = 0;
-                    try {
-                        statuscode = client.executeMethod(filePost);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    final int finalStatuscode = statuscode;
-
-                    mContext.runOnUiThread(new Runnable() {
-
-                        @Override
-                        public void run() {
-                            if (finalStatuscode == HttpStatus.SC_OK) {
-                                Toast.makeText(mContext, "上传成功", Toast.LENGTH_SHORT).show();
-                            } else {
-                                Toast.makeText(mContext, "上传失败", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
+                    filePath = resultFile.getPath();
                 }
-
-            }).start();
-
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (inputStream != null)
+                    inputStream.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
+        return filePath;
+    }
+
+    /**
+     * 根据URL得到输入流
+     *
+     * @param urlStr
+     * @return
+     */
+    public InputStream getInputStreamFromURL(String urlStr) {
+
+        HttpURLConnection urlConn;
+        InputStream inputStream = null;
+        try {
+            url = new URL(urlStr);
+            urlConn = (HttpURLConnection) url.openConnection();
+            inputStream = urlConn.getInputStream();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return inputStream;
     }
 
 }
