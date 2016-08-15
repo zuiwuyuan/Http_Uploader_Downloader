@@ -9,6 +9,7 @@ import android.widget.Toast;
 
 import com.lnyp.updown.util.CustomFilePart;
 import com.lnyp.updown.util.HttpDownloader;
+import com.lnyp.updown.util.MultipartUtility;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
@@ -19,6 +20,7 @@ import org.apache.commons.httpclient.methods.multipart.StringPart;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -28,7 +30,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
-    public void OnUploadFile(View view) {
+    public void httpClientFile(View view) {
 
         final String targetUrl = "";
         final String filePath = "";
@@ -36,6 +38,30 @@ public class MainActivity extends AppCompatActivity {
         uploadFile(MainActivity.this, targetUrl, filePath);
 
     }
+
+    public void httpUrlConnectionFile(View view) {
+
+        String charset = "UTF-8";
+        String requestURL = "YOUR_URL";
+        String filePath = "";
+
+        MultipartUtility multipart = null;
+
+        try {
+            multipart = new MultipartUtility(requestURL, charset);
+            multipart.addFormField("param_name_1", "param_value");
+            multipart.addFormField("param_name_2", "param_value");
+            multipart.addFormField("param_name_3", "param_value");
+            multipart.addFilePart("file_param_1", new File(filePath));
+
+            List<String> response = multipart.finish(); // response from server.
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
 
     public void OnDownloadFile(View view) {
 
