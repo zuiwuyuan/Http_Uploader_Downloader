@@ -14,7 +14,11 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MultipartUtility {
+/**
+ * http://stackoverflow.com/questions/11766878/sending-files-using-post-with-httpurlconnection
+ */
+public class HttpClientUpLoader {
+
     private final String boundary;
     private static final String LINE_FEED = "\r\n";
     private HttpURLConnection httpConn;
@@ -30,7 +34,7 @@ public class MultipartUtility {
      * @param charset
      * @throws IOException
      */
-    public MultipartUtility(String requestURL, String charset)
+    public HttpClientUpLoader(String requestURL, String charset)
             throws IOException {
         this.charset = charset;
 
@@ -45,7 +49,6 @@ public class MultipartUtility {
         httpConn.setRequestProperty("Content-Type",
                 "multipart/form-data; boundary=" + boundary);
         httpConn.setRequestProperty("User-Agent", "CodeJava Agent");
-        httpConn.setRequestProperty("Test", "Bonjour");
         outputStream = httpConn.getOutputStream();
         writer = new PrintWriter(new OutputStreamWriter(outputStream, charset),
                 true);
@@ -92,7 +95,7 @@ public class MultipartUtility {
         writer.flush();
 
         FileInputStream inputStream = new FileInputStream(uploadFile);
-        byte[] buffer = new byte[4096];
+        byte[] buffer = new byte[5 * 1024];
         int bytesRead = -1;
         while ((bytesRead = inputStream.read(buffer)) != -1) {
             outputStream.write(buffer, 0, bytesRead);

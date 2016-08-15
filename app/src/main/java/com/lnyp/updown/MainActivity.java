@@ -9,7 +9,7 @@ import android.widget.Toast;
 
 import com.lnyp.updown.util.CustomFilePart;
 import com.lnyp.updown.util.HttpDownloader;
-import com.lnyp.updown.util.MultipartUtility;
+import com.lnyp.updown.util.HttpUrlConnectUpLoader;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.HttpStatus;
@@ -42,13 +42,13 @@ public class MainActivity extends AppCompatActivity {
     public void httpUrlConnectionFile(View view) {
 
         String charset = "UTF-8";
-        String requestURL = "YOUR_URL";
+        String requestURL = "";
         String filePath = "";
 
-        MultipartUtility multipart = null;
+        HttpUrlConnectUpLoader multipart = null;
 
         try {
-            multipart = new MultipartUtility(requestURL, charset);
+            multipart = new HttpUrlConnectUpLoader(requestURL, charset);
             multipart.addFormField("param_name_1", "param_value");
             multipart.addFormField("param_name_2", "param_value");
             multipart.addFormField("param_name_3", "param_value");
